@@ -621,6 +621,20 @@ const CATS = {
 };
 
 // ── STATE ──
+// ── MIGRATE: clear old demo-seeded data if it exists from v1 ──
+(function(){
+  const raw = localStorage.getItem('expenseData');
+  if(!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    // If any month has an entry named 'HDFC Credit Card Bill' it is demo data — wipe it
+    let isDemo = false;
+    Object.values(parsed).forEach(entries => {
+      if(Array.isArray(entries) && entries.some(e => e.name === 'HDFC Credit Card Bill')) isDemo = true;
+    });
+    if(isDemo){ localStorage.removeItem('expenseData'); }
+  } catch(e){}
+})();
 let data = JSON.parse(localStorage.getItem('expenseData') || '{}');
 // data structure: { "2025-03": [...expenses] }
 let currentYear  = new Date().getFullYear();
@@ -978,24 +992,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── SEED DEMO DATA ──
-function seedDemoIfEmpty(){
-  const key = currentKey();
-  if(data[key] && data[key].length > 0) return;
-  const yr = currentYear, mo = currentMonth+1, pad = n=>String(n).padStart(2,'0');
-  data[key] = [
-    { id:uid(), name:'HDFC Credit Card Bill', category:'Credit Card',     amount:8450, date:`${yr}-${pad(mo)}-01`, dueDate:`${yr}-${pad(mo)}-05`, method:'Net Banking', paid:true,  recurring:'monthly', notes:'', updatedAt:'' },
-    { id:uid(), name:'Jio Mobile Recharge',   category:'Mobile Recharge', amount:299,  date:`${yr}-${pad(mo)}-02`, dueDate:`${yr}-${pad(mo)}-10`, method:'UPI',         paid:true,  recurring:'monthly', notes:'84 days plan', updatedAt:'' },
-    { id:uid(), name:'Electricity – MSEB',    category:'Electricity',     amount:1240, date:`${yr}-${pad(mo)}-05`, dueDate:`${yr}-${pad(mo)}-15`, method:'UPI',         paid:false, recurring:'monthly', notes:'Units: 310', updatedAt:'' },
-    { id:uid(), name:'Airtel Broadband',      category:'Internet',        amount:799,  date:`${yr}-${pad(mo)}-03`, dueDate:`${yr}-${pad(mo)}-12`, method:'Auto Debit',  paid:true,  recurring:'monthly', notes:'200 Mbps', updatedAt:'' },
-    { id:uid(), name:'Netflix + Hotstar',     category:'OTT / Subscriptions', amount:649, date:`${yr}-${pad(mo)}-01`, dueDate:`${yr}-${pad(mo)}-01`, method:'Credit Card', paid:true, recurring:'monthly', notes:'', updatedAt:'' },
-    { id:uid(), name:'LIC Premium',           category:'Insurance',       amount:4200, date:`${yr}-${pad(mo)}-07`, dueDate:`${yr}-${pad(mo)}-20`, method:'Net Banking', paid:false, recurring:'quarterly', notes:'Policy #4532', updatedAt:'' },
-    { id:uid(), name:'Home Loan EMI – SBI',   category:'EMI / Loan',      amount:22500,date:`${yr}-${pad(mo)}-01`, dueDate:`${yr}-${pad(mo)}-05`, method:'Auto Debit',  paid:true,  recurring:'monthly', notes:'', updatedAt:'' },
-    { id:uid(), name:'Piped Gas – MGL',       category:'Gas',             amount:620,  date:`${yr}-${pad(mo)}-08`, dueDate:`${yr}-${pad(mo)}-25`, method:'UPI',         paid:false, recurring:'monthly', notes:'', updatedAt:'' },
-    { id:uid(), name:'Water Bill – MCGM',     category:'Water',           amount:380,  date:`${yr}-${pad(mo)}-10`, dueDate:`${yr}-${pad(mo)}-28`, method:'UPI',         paid:false, recurring:'monthly', notes:'', updatedAt:'' },
-    { id:uid(), name:'Car Loan EMI – ICICI',  category:'EMI / Loan',      amount:9800, date:`${yr}-${pad(mo)}-01`, dueDate:`${yr}-${pad(mo)}-05`, method:'Auto Debit',  paid:true,  recurring:'monthly', notes:'', updatedAt:'' },
-  ];
-  save();
-}
+// demo data removed — app starts clean
 
 
 // ── AUTH ──
@@ -1048,7 +1045,6 @@ checkSession();
 
 // ── INIT ──
 updateMonthLabel();
-seedDemoIfEmpty();
 refreshAll();
 
 // ── PWA SERVICE WORKER ──
