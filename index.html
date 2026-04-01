@@ -330,7 +330,43 @@ tbody td{padding:11px 16px;font-size:13px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .25s ease forwards}
 </style>
+
+<style>
+@keyframes loginFadeIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+</style>
 </head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;z-index:9999;background:#1e160d;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+  <div id="loginBox" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:20px;padding:48px 44px 40px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,0.6);animation:loginFadeIn .4s ease;">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="width:56px;height:56px;border-radius:14px;background:#c0533a;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(192,83,58,0.4);">&#8377;</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:#faf7f2;letter-spacing:-0.3px">Expense Monitor</div>
+      <div style="font-size:13px;color:rgba(250,247,242,0.45);margin-top:6px">Sign in to access your dashboard</div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:11px;font-weight:600;color:rgba(250,247,242,0.5);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px">Username</label>
+      <input id="loginUser" type="text" placeholder="Enter username" autocomplete="username"
+        style="width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#faf7f2;border-radius:9px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;box-sizing:border-box;"
+        onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()"/>
+    </div>
+    <div style="margin-bottom:24px">
+      <label style="display:block;font-size:11px;font-weight:600;color:rgba(250,247,242,0.5);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px">Password</label>
+      <div style="position:relative">
+        <input id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password"
+          style="width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#faf7f2;border-radius:9px;padding:12px 42px 12px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;box-sizing:border-box;"
+          onkeydown="if(event.key==='Enter')doLogin()"/>
+        <span onclick="togglePassword()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;opacity:0.45;user-select:none;">&#128065;</span>
+      </div>
+    </div>
+    <div id="loginError" style="display:none;margin-bottom:16px;background:rgba(192,83,58,0.15);border:1px solid rgba(192,83,58,0.4);border-radius:8px;padding:10px 14px;font-size:13px;color:#ff9b7a;text-align:center;">Incorrect username or password</div>
+    <button onclick="doLogin()" style="width:100%;background:#c0533a;color:#fff;border:none;border-radius:9px;padding:13px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;">Sign In</button>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(250,247,242,0.25)">&#128274; Data synced privately via Google Sheets</div>
+  </div>
+</div>
+
 <body>
 
 <!-- ── LOGIN SCREEN ── -->
@@ -605,525 +641,34 @@ tbody td{padding:11px 16px;font-size:13px}
   <span id="toastMsg">Saved!</span>
 </div>
 
-<script>
-// ── CATEGORY CONFIG ──
-const CATS = {
-  'Credit Card':       { color:'#c0533a', bg:'rgba(192,83,58,0.12)',  emoji:'💳' },
-  'Mobile Recharge':   { color:'#2a7d8c', bg:'rgba(42,125,140,0.12)', emoji:'📱' },
-  'Electricity':       { color:'#d4960a', bg:'rgba(212,150,10,0.12)', emoji:'⚡' },
-  'Internet':          { color:'#2a5ca8', bg:'rgba(42,92,168,0.12)',  emoji:'🌐' },
-  'Water':             { color:'#4aa8ba', bg:'rgba(74,168,186,0.12)', emoji:'💧' },
-  'Gas':               { color:'#e8734f', bg:'rgba(232,115,79,0.12)', emoji:'🔥' },
-  'OTT / Subscriptions':{ color:'#7c3a7a', bg:'rgba(124,58,122,0.12)', emoji:'📺' },
-  'Insurance':         { color:'#4a7c59', bg:'rgba(74,124,89,0.12)',  emoji:'🛡️' },
-  'EMI / Loan':        { color:'#5c4a32', bg:'rgba(92,74,50,0.12)',   emoji:'🏦' },
-  'Rent':              { color:'#8a3a3a', bg:'rgba(138,58,58,0.12)',  emoji:'🏠' },
-  'Grocery':           { color:'#3a7a5c', bg:'rgba(58,122,92,0.12)',  emoji:'🛒' },
-  'Other':             { color:'#7a6248', bg:'rgba(122,98,72,0.12)',  emoji:'⋯'  },
-};
 
-// ── GOOGLE SHEETS CONFIG ──
-// Replace the URL below with your actual Web App URL from Google Apps Script
-// IMPORTANT: This URL is write-protected — it only accepts requests from this app
-// Your actual expense data lives in YOUR private Google Sheet, not exposed here
+
+<script>
+// ════════════════════════════════════════════
+// GOOGLE SHEETS CONFIG
+// ════════════════════════════════════════════
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzef9z70N0myEaHFPX-FgrBNjMn5Y_TVm1vhtgS2-qJJGFCUPfRe92NrwHrj4oQVB6ddw/exec';
 
-// ── STATE ──
-let data = {}; // loaded from Google Sheets on startup
-let syncStatus = 'idle'; // idle | syncing | error | ok
-
-// ── SYNC UI ──
-function setSyncStatus(s, msg){
-  syncStatus = s;
-  const el = document.getElementById('syncBadge');
-  if(!el) return;
-  const map = {
-    syncing: { text:'⟳ Syncing…',  color:'#d4960a' },
-    ok:      { text:'✓ Synced',    color:'#4a7c59' },
-    offline: { text:'⚡ Offline',  color:'#7a6248' },
-    error:   { text:'✕ Sync error',color:'#c0533a' },
-  };
-  const m = map[s] || map.offline;
-  el.textContent = msg || m.text;
-  el.style.color = m.color;
-}
-
-// ── LOAD FROM GOOGLE SHEETS ──
-async function loadFromSheets(){
-  setSyncStatus('syncing');
-  try {
-    // Google Apps Script requires no-cors for GET — use URL param trick to get JSON back
-    const url = SHEETS_URL + '?t=' + Date.now(); // cache buster
-    const res = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-    });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    let rows = [];
-    try { rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON from sheet: ' + text.slice(0,100)); }
-    data = {};
-    if(Array.isArray(rows)){
-      rows.forEach(e => {
-        if(!e.id || !e.name) return; // skip empty rows
-        // Normalize date — sheet sometimes returns date objects as strings
-        // Normalize date to YYYY-MM-DD regardless of what format sheet returns
-        let rawDate = String(e.date || '').trim();
-        try {
-          const d = new Date(rawDate);
-          if (!isNaN(d.getTime())) {
-            const y = d.getFullYear();
-            const mo = String(d.getMonth()+1).padStart(2,'0');
-            const dy = String(d.getDate()).padStart(2,'0');
-            rawDate = `${y}-${mo}-${dy}`;
-          }
-        } catch(ex) {}
-        const monthKey = rawDate.length >= 7 ? rawDate.slice(0,7) : 'unknown';
-        if(!data[monthKey]) data[monthKey] = [];
-        data[monthKey].push({
-          id:        String(e.id),
-          name:      String(e.name),
-          category:  String(e.category || 'Other'),
-          amount:    parseFloat(e.amount) || 0,
-          date:      rawDate,
-          dueDate:   String(e.dueDate || ''),
-          method:    String(e.method || ''),
-          paid:      e.paid === 'true' || e.paid === true || e.paid === 'TRUE',
-          recurring: String(e.recurring || 'none'),
-          notes:     String(e.notes || ''),
-          updatedAt: String(e.updatedAt || ''),
-        });
-      });
-    }
-    localStorage.setItem('expenseCache', JSON.stringify(data));
-    setSyncStatus('ok');
-    console.log('Loaded', Object.values(data).flat().length, 'entries from Google Sheets');
-  } catch(err){
-    console.warn('Sheets load failed:', err.message);
-    const cached = localStorage.getItem('expenseCache');
-    if(cached){ try{ data = JSON.parse(cached); console.log('Using local cache'); }catch(e){} }
-    setSyncStatus('error', '✕ ' + err.message.slice(0,40));
-  }
-  refreshAll();
-}
-
-// ── SAVE TO GOOGLE SHEETS ──
-async function saveToSheets(){
-  setSyncStatus('syncing');
-  const allEntries = Object.values(data).flat();
-  localStorage.setItem('expenseCache', JSON.stringify(data));
-  try {
-    // Apps Script POST needs Content-Type text/plain to avoid CORS preflight
-    const res = await fetch(SHEETS_URL, {
-      method:  'POST',
-      redirect:'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body:    JSON.stringify({ action:'save', data: allEntries }),
-    });
-    const text = await res.text();
-    let json = {};
-    try { json = JSON.parse(text); } catch(e){}
-    if(json.status === 'ok'){
-      setSyncStatus('ok');
-      console.log('Saved', allEntries.length, 'entries to Google Sheets');
-    } else {
-      throw new Error(text.slice(0,80));
-    }
-  } catch(err){
-    console.warn('Sheets save failed:', err.message);
-    setSyncStatus('error', '✕ Saved locally only');
-  }
-}
-// data structure: { "2025-03": [...expenses] }
-let currentYear  = new Date().getFullYear();
-let currentMonth = new Date().getMonth(); // 0-indexed
-let editId       = null;
-let filterCat    = 'all';
-let sortKey      = 'date';
-let sortAsc      = false;
-let donutChart   = null;
-
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const SHORT_MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-// ── HELPERS ──
-function monthKey(y,m){ return `${y}-${String(m+1).padStart(2,'0')}` }
-function currentKey(){ return monthKey(currentYear, currentMonth) }
-function currentEntries(){ return data[currentKey()] || [] }
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2) }
-function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:0}) }
-function save(){ saveToSheets(); }
-
-// ── MONTH NAV ──
-function updateMonthLabel(){
-  document.getElementById('monthLabel').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
-}
-function changeMonth(dir){
-  currentMonth += dir;
-  if(currentMonth < 0){ currentMonth = 11; currentYear--; }
-  if(currentMonth > 11){ currentMonth = 0; currentYear++; }
-  updateMonthLabel();
-  refreshAll();
-}
-
-// ── FILTER / SORT ──
-function setFilter(cat){
-  filterCat = cat;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
-  renderTable();
-}
-function sortBy(key){
-  if(sortKey === key) sortAsc = !sortAsc;
-  else { sortKey = key; sortAsc = true; }
-  renderTable();
-}
-
-// ── RENDER TABLE ──
-function renderTable(){
-  const tbody = document.getElementById('tableBody');
-  const empty = document.getElementById('emptyState');
-  const search = document.getElementById('searchInput').value.toLowerCase();
-
-  let entries = currentEntries().filter(e => {
-    const matchCat  = filterCat === 'all' || e.category === filterCat;
-    const matchSrch = !search || [e.name, e.category, e.notes||''].some(v => v.toLowerCase().includes(search));
-    return matchCat && matchSrch;
-  });
-
-  entries.sort((a,b) => {
-    let va = a[sortKey]||'', vb = b[sortKey]||'';
-    if(sortKey === 'amount') { va = +va; vb = +vb; }
-    if(sortKey === 'paid')   { va = a.paid?1:0; vb = b.paid?1:0; }
-    if(va < vb) return sortAsc ? -1 : 1;
-    if(va > vb) return sortAsc ?  1 : -1;
-    return 0;
-  });
-
-  const total = entries.reduce((s,e) => s + (+e.amount), 0);
-  document.getElementById('footerCount').textContent = `${entries.length} entr${entries.length===1?'y':'ies'}`;
-  document.getElementById('footerTotal').textContent = `Total: ${fmt(total)}`;
-
-  if(!entries.length){
-    tbody.innerHTML = '';
-    empty.style.display = 'flex';
-    return;
-  }
-  empty.style.display = 'none';
-
-  const today = new Date().toISOString().slice(0,10);
-
-  tbody.innerHTML = entries.map(e => {
-    const cat = CATS[e.category] || CATS['Other'];
-    const overdue = !e.paid && e.dueDate && e.dueDate < today;
-    return `<tr class="fade-in${overdue?' overdue':''}">
-      <td style="font-size:12px;color:var(--ink3)">${e.date||'—'}</td>
-      <td>
-        <div style="font-weight:500;color:var(--ink)">${e.name}</div>
-        ${e.notes ? `<div style="font-size:11px;color:var(--ink3)">${e.notes}</div>` : ''}
-        ${e.method ? `<div style="font-size:11px;color:var(--ink3)">${e.method}</div>` : ''}
-      </td>
-      <td>
-        <span class="cat-badge" style="background:${cat.bg};color:${cat.color}">
-          ${cat.emoji} ${e.category}
-        </span>
-      </td>
-      <td class="amt" style="color:${e.paid?'var(--ink)':'var(--rust)'}">${fmt(e.amount)}</td>
-      <td style="font-size:12px;color:${overdue?'var(--rust)':'var(--ink3)'}">
-        ${e.dueDate ? (overdue?'⚠️ ':'')+e.dueDate : '—'}
-      </td>
-      <td>
-        ${e.paid
-          ? '<span class="paid-yes">✓ Paid</span>'
-          : `<span class="paid-no">${overdue?'Overdue':'Unpaid'}</span>`}
-      </td>
-      <td>
-        <div class="row-actions">
-          <button class="act-btn act-paid" onclick="togglePaid('${e.id}')" title="${e.paid?'Mark unpaid':'Mark paid'}">
-            ${e.paid?'↩':'✓'}
-          </button>
-          <button class="act-btn act-edit" onclick="openEdit('${e.id}')" title="Edit">✎</button>
-          <button class="act-btn act-del"  onclick="deleteEntry('${e.id}')" title="Delete">✕</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── SUMMARY CARDS ──
-function renderSummary(){
-  const entries = currentEntries();
-  const total   = entries.reduce((s,e) => s+(+e.amount), 0);
-  const paid    = entries.filter(e=>e.paid).reduce((s,e)=>s+(+e.amount),0);
-  const pending = entries.filter(e=>!e.paid).reduce((s,e)=>s+(+e.amount),0);
-  document.getElementById('s-total').textContent   = fmt(total);
-  document.getElementById('s-paid').textContent    = fmt(paid);
-  document.getElementById('s-pending').textContent = fmt(pending);
-  document.getElementById('s-count').textContent   = entries.length;
-  document.getElementById('s-total-sub').textContent   = `${entries.length} bills`;
-  document.getElementById('s-paid-sub').textContent    = `${entries.filter(e=>e.paid).length} bills cleared`;
-  document.getElementById('s-pending-sub').textContent = `${entries.filter(e=>!e.paid).length} bills pending`;
-}
-
-// ── DONUT CHART ──
-function renderChart(){
-  const entries = currentEntries();
-  const grouped = {};
-  entries.forEach(e => {
-    grouped[e.category] = (grouped[e.category]||0) + (+e.amount);
-  });
-
-  const sorted = Object.entries(grouped).sort((a,b)=>b[1]-a[1]);
-  const labels = sorted.map(([k])=>k);
-  const values = sorted.map(([,v])=>v);
-  const colors = labels.map(l => (CATS[l]||CATS['Other']).color);
-  const total  = values.reduce((s,v)=>s+v,0);
-
-  if(donutChart){ donutChart.destroy(); donutChart=null; }
-
-  const ctx = document.getElementById('donutChart').getContext('2d');
-  donutChart = new Chart(ctx,{
-    type:'doughnut',
-    data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2, borderColor:'#fff', hoverOffset:6 }]},
-    options:{
-      cutout:'68%',
-      plugins:{
-        legend:{ display:false },
-        tooltip:{
-          callbacks:{
-            label: ctx => ` ${fmt(ctx.parsed)} (${((ctx.parsed/total)*100).toFixed(1)}%)`
-          }
-        }
-      },
-      animation:{ animateScale:true, duration:600 }
-    }
-  });
-
-  // Breakdown list
-  const bl = document.getElementById('breakdownList');
-  if(!sorted.length){ bl.innerHTML='<div style="padding:12px 20px;font-size:12px;color:var(--ink3)">No data for this month</div>'; return; }
-  bl.innerHTML = sorted.map(([cat,amt]) => {
-    const c = CATS[cat]||CATS['Other'];
-    const pct = total > 0 ? ((amt/total)*100).toFixed(0) : 0;
-    return `<div class="bdwn-row">
-      <div class="bdwn-dot" style="background:${c.color}"></div>
-      <div class="bdwn-name">${c.emoji} ${cat}</div>
-      <div class="bdwn-bar-wrap"><div class="bdwn-bar" style="width:${pct}%;background:${c.color}"></div></div>
-      <div class="bdwn-amt">${fmt(amt)}</div>
-      <div class="bdwn-pct">${pct}%</div>
-    </div>`;
-  }).join('');
-}
-
-// ── UPCOMING / OVERDUE ──
-function renderUpcoming(){
-  const today = new Date().toISOString().slice(0,10);
-  const future = new Date(); future.setDate(future.getDate()+30);
-  const futureStr = future.toISOString().slice(0,10);
-
-  const entries = currentEntries().filter(e =>
-    !e.paid && e.dueDate && e.dueDate <= futureStr
-  ).sort((a,b) => a.dueDate > b.dueDate ? 1:-1);
-
-  const ul = document.getElementById('upcomingList');
-  if(!entries.length){
-    ul.innerHTML = `<div class="empty" style="padding:28px 24px">
-      <div style="font-size:28px;opacity:0.35">📅</div>
-      <div style="font-size:13px;color:var(--ink3)">No upcoming unpaid bills</div>
-    </div>`;
-    return;
-  }
-
-  ul.innerHTML = entries.map(e => {
-    const cat = CATS[e.category]||CATS['Other'];
-    const dd  = new Date(e.dueDate);
-    const overdue = e.dueDate < today;
-    return `<div class="upcoming-item${overdue?' overdue':''}">
-      <div class="up-day" style="${overdue?'background:rgba(192,83,58,0.1);border-color:var(--rust)':''}">
-        <div class="up-day-num" style="${overdue?'color:var(--rust)':''}">${dd.getDate()}</div>
-        <div class="up-day-mo">${SHORT_MO[dd.getMonth()]}</div>
-      </div>
-      <div class="up-info">
-        <div class="up-name">${e.name}</div>
-        <div class="up-cat">${cat.emoji} ${e.category}${overdue?' · <span style="color:var(--rust)">Overdue</span>':''}</div>
-      </div>
-      <div class="up-amt">${fmt(e.amount)}</div>
-    </div>`;
-  }).join('');
-}
-
-// ── REFRESH ALL ──
-function refreshAll(){
-  renderSummary();
-  renderTable();
-  renderChart();
-  renderUpcoming();
-}
-
-// ── ADD / EDIT MODAL ──
-function openAdd(){
-  editId = null;
-  document.getElementById('modalTitle').textContent = 'Add Expense';
-  document.getElementById('f-name').value      = '';
-  document.getElementById('f-amount').value    = '';
-  document.getElementById('f-category').value  = '';
-  document.getElementById('f-date').value      = new Date().toISOString().slice(0,10);
-  document.getElementById('f-dueDate').value   = '';
-  document.getElementById('f-method').value    = '';
-  document.getElementById('f-paid').value      = 'false';
-  document.getElementById('f-recurring').value = 'none';
-  document.getElementById('f-notes').value     = '';
-  document.getElementById('overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('f-name').focus(), 100);
-}
-
-function openEdit(id){
-  const entry = currentEntries().find(e=>e.id===id);
-  if(!entry) return;
-  editId = id;
-  document.getElementById('modalTitle').textContent = 'Edit Expense';
-  document.getElementById('f-name').value      = entry.name;
-  document.getElementById('f-amount').value    = entry.amount;
-  document.getElementById('f-category').value  = entry.category;
-  document.getElementById('f-date').value      = entry.date||'';
-  document.getElementById('f-dueDate').value   = entry.dueDate||'';
-  document.getElementById('f-method').value    = entry.method||'';
-  document.getElementById('f-paid').value      = String(entry.paid);
-  document.getElementById('f-recurring').value = entry.recurring||'none';
-  document.getElementById('f-notes').value     = entry.notes||'';
-  document.getElementById('overlay').classList.add('open');
-}
-
-function closeModal(e){
-  if(e && e.target !== document.getElementById('overlay')) return;
-  document.getElementById('overlay').classList.remove('open');
-  editId = null;
-}
-
-function saveExpense(){
-  const name     = document.getElementById('f-name').value.trim();
-  const amount   = parseFloat(document.getElementById('f-amount').value);
-  const category = document.getElementById('f-category').value;
-
-  if(!name){ alert('Please enter a description.'); return; }
-  if(!amount || amount <= 0){ alert('Please enter a valid amount.'); return; }
-  if(!category){ alert('Please select a category.'); return; }
-
-  const entry = {
-    id:        editId || uid(),
-    name,
-    amount,
-    category,
-    date:      document.getElementById('f-date').value,
-    dueDate:   document.getElementById('f-dueDate').value,
-    method:    document.getElementById('f-method').value,
-    paid:      document.getElementById('f-paid').value === 'true',
-    recurring: document.getElementById('f-recurring').value,
-    notes:     document.getElementById('f-notes').value.trim(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  const key = currentKey();
-  if(!data[key]) data[key] = [];
-
-  if(editId){
-    const idx = data[key].findIndex(e=>e.id===editId);
-    if(idx > -1) data[key][idx] = entry;
-  } else {
-    data[key].push(entry);
-  }
-
-  save();
-  document.getElementById('overlay').classList.remove('open');
-  editId = null;
-  refreshAll();
-  toast(editId ? '✎ Expense updated' : '✓ Expense added');
-}
-
-function deleteEntry(id){
-  if(!confirm('Delete this expense?')) return;
-  const key = currentKey();
-  data[key] = (data[key]||[]).filter(e=>e.id!==id);
-  save();
-  refreshAll();
-  toast('🗑 Expense deleted');
-}
-
-function togglePaid(id){
-  const key = currentKey();
-  const entry = (data[key]||[]).find(e=>e.id===id);
-  if(!entry) return;
-  entry.paid = !entry.paid;
-  save();
-  refreshAll();
-  toast(entry.paid ? '✓ Marked as paid' : '↩ Marked as unpaid');
-}
-
-// ── TOAST ──
-function toast(msg, icon=''){
-  const el = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'), 2400);
-}
-
-// ── EXPORT CSV ──
-function exportCSV(){
-  const entries = currentEntries();
-  if(!entries.length){ alert('No entries to export.'); return; }
-  const headers = ['Date','Description','Category','Amount','Due Date','Status','Method','Recurring','Notes'];
-  const rows = entries.map(e => [
-    e.date||'', e.name, e.category, e.amount,
-    e.dueDate||'', e.paid?'Paid':'Unpaid', e.method||'', e.recurring||'', `"${(e.notes||'').replace(/"/g,"'")}"`
-  ]);
-  const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download = `expenses-${currentKey()}.csv`;
-  a.click();
-  toast('📥 CSV exported');
-}
-
-// ── KEYBOARD ──
-document.addEventListener('keydown', e => {
-  if(e.key==='Escape') closeModal({target:document.getElementById('overlay')});
-  if(e.key==='Enter' && document.getElementById('overlay').classList.contains('open')) saveExpense();
-});
-
-// ── SEED DEMO DATA ──
-// demo data removed — app starts clean
-
-
-// ── AUTH ──
-const AUTH = {
-  USERNAME: 'admin',
-  PASSWORD: 'expense@123',
-  SESSION_KEY: 'expense_auth_session'
-};
-
-function checkSession(){
-  const s = sessionStorage.getItem(AUTH.SESSION_KEY);
-  if(s === 'true'){
-    document.getElementById('loginScreen').style.display = 'none';
-  }
-}
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+const AUTH = { USERNAME:'admin', PASSWORD:'expense@123', KEY:'exp_auth' };
 
 function doLogin(){
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
   const err = document.getElementById('loginError');
-  const screen = document.getElementById('loginScreen');
-
   if(u === AUTH.USERNAME && p === AUTH.PASSWORD){
     err.style.display = 'none';
-    screen.style.opacity = '0';
-    screen.style.transition = 'opacity .3s ease';
-    setTimeout(()=>{ screen.style.display = 'none'; }, 300);
-    sessionStorage.setItem(AUTH.SESSION_KEY, 'true');
+    sessionStorage.setItem(AUTH.KEY,'1');
+    const scr = document.getElementById('loginScreen');
+    scr.style.transition = 'opacity .3s';
+    scr.style.opacity = '0';
+    setTimeout(()=>scr.style.display='none', 300);
   } else {
     err.style.display = 'block';
-    const box = screen.querySelector('div > div');
-    box.style.animation = 'none';
-    setTimeout(()=>{ box.style.animation = 'shake .4s ease'; }, 10);
+    document.getElementById('loginBox').style.animation = 'none';
+    setTimeout(()=>document.getElementById('loginBox').style.animation='shake .4s ease', 10);
     document.getElementById('loginPass').value = '';
     document.getElementById('loginPass').focus();
   }
@@ -1135,17 +680,496 @@ function togglePassword(){
 }
 
 function doLogout(){
-  sessionStorage.removeItem(AUTH.SESSION_KEY);
+  sessionStorage.removeItem(AUTH.KEY);
   location.reload();
 }
 
-checkSession();
+(function checkSession(){
+  if(sessionStorage.getItem(AUTH.KEY)==='1'){
+    document.getElementById('loginScreen').style.display='none';
+  }
+})();
 
-// ── INIT ──
+// ════════════════════════════════════════════
+// SYNC STATUS
+// ════════════════════════════════════════════
+function setSyncStatus(s){
+  const el = document.getElementById('syncBadge');
+  if(!el) return;
+  const map = {
+    syncing:{ text:'⟳ Syncing…',   color:'#d4960a' },
+    ok:     { text:'✓ Synced',     color:'#4a7c59' },
+    offline:{ text:'⚡ Offline',   color:'#7a6248' },
+    error:  { text:'✕ Sync error', color:'#c0533a' },
+  };
+  const m = map[s] || map.offline;
+  el.textContent = m.text;
+  el.style.color  = m.color;
+}
+
+// ════════════════════════════════════════════
+// DATE HELPER — convert ANY format to YYYY-MM-DD
+// ════════════════════════════════════════════
+function toYMD(val){
+  if(!val) return '';
+  const s = String(val).trim();
+  // Already correct format YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Try parsing as Date object
+  try {
+    const d = new Date(s);
+    if(!isNaN(d.getTime())){
+      const y  = d.getFullYear();
+      const mo = String(d.getMonth()+1).padStart(2,'0');
+      const dy = String(d.getDate()).padStart(2,'0');
+      return `${y}-${mo}-${dy}`;
+    }
+  } catch(e) {}
+  return s; // return as-is if we can't parse
+}
+
+// ════════════════════════════════════════════
+// LOAD FROM GOOGLE SHEETS
+// ════════════════════════════════════════════
+async function loadFromSheets(){
+  setSyncStatus('syncing');
+  try {
+    const res = await fetch(SHEETS_URL + '?t=' + Date.now(), {
+      method:'GET', redirect:'follow'
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = JSON.parse(text);
+    if(!Array.isArray(rows)) throw new Error('Sheet returned non-array: ' + typeof rows);
+
+    data = {};
+    let loaded = 0;
+    rows.forEach(e => {
+      if(!e.id || !e.name) return; // skip blank/header rows
+      const cleanDate = toYMD(e.date);       // always YYYY-MM-DD
+      const mk = cleanDate.slice(0,7);        // YYYY-MM
+      if(mk.length < 7) return;              // skip if date still bad
+      if(!data[mk]) data[mk] = [];
+      data[mk].push({
+        id:        String(e.id),
+        name:      String(e.name),
+        category:  String(e.category  || 'Other'),
+        amount:    parseFloat(e.amount) || 0,
+        date:      cleanDate,
+        dueDate:   toYMD(e.dueDate),
+        method:    String(e.method    || ''),
+        paid:      e.paid === 'true' || e.paid === true || e.paid === 'TRUE',
+        recurring: String(e.recurring || 'none'),
+        notes:     String(e.notes     || ''),
+        updatedAt: String(e.updatedAt || ''),
+      });
+      loaded++;
+    });
+
+    // save to local cache as backup
+    localStorage.setItem('expenseCache', JSON.stringify(data));
+    setSyncStatus('ok');
+    console.log('✓ Loaded', loaded, 'entries from Google Sheets');
+  } catch(err) {
+    console.warn('Sheets load failed:', err.message);
+    // fall back to local cache
+    try {
+      const c = localStorage.getItem('expenseCache');
+      if(c) data = JSON.parse(c);
+    } catch(e) {}
+    setSyncStatus('offline');
+  }
+  refreshAll();
+}
+
+// ════════════════════════════════════════════
+// SAVE TO GOOGLE SHEETS
+// ════════════════════════════════════════════
+async function saveToSheets(){
+  setSyncStatus('syncing');
+  const allEntries = Object.values(data).flat();
+  // always keep local backup
+  localStorage.setItem('expenseCache', JSON.stringify(data));
+  try {
+    const res = await fetch(SHEETS_URL, {
+      method:  'POST',
+      redirect:'follow',
+      headers: { 'Content-Type':'text/plain;charset=utf-8' },
+      body:    JSON.stringify({ action:'save', data:allEntries }),
+    });
+    const text = await res.text();
+    const json = JSON.parse(text);
+    if(json.status === 'ok'){
+      setSyncStatus('ok');
+      console.log('✓ Saved', allEntries.length, 'entries to Google Sheets');
+    } else {
+      throw new Error(JSON.stringify(json));
+    }
+  } catch(err) {
+    console.warn('Sheets save failed:', err.message);
+    setSyncStatus('error');
+  }
+}
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let data        = {};
+let currentYear  = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+let editId       = null;
+let filterCat    = 'all';
+let sortKey      = 'date';
+let sortAsc      = false;
+let donutChart   = null;
+
+const MONTHS   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const SHORT_MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ════════════════════════════════════════════
+// CATEGORY CONFIG
+// ════════════════════════════════════════════
+const CATS = {
+  'Credit Card':        { color:'#c0533a', bg:'rgba(192,83,58,0.12)',  emoji:'💳' },
+  'Mobile Recharge':    { color:'#2a7d8c', bg:'rgba(42,125,140,0.12)', emoji:'📱' },
+  'Electricity':        { color:'#d4960a', bg:'rgba(212,150,10,0.12)', emoji:'⚡' },
+  'Internet':           { color:'#2a5ca8', bg:'rgba(42,92,168,0.12)',  emoji:'🌐' },
+  'Water':              { color:'#4aa8ba', bg:'rgba(74,168,186,0.12)', emoji:'💧' },
+  'Gas':                { color:'#e8734f', bg:'rgba(232,115,79,0.12)', emoji:'🔥' },
+  'OTT / Subscriptions':{ color:'#7c3a7a', bg:'rgba(124,58,122,0.12)', emoji:'📺' },
+  'Insurance':          { color:'#4a7c59', bg:'rgba(74,124,89,0.12)',  emoji:'🛡️' },
+  'EMI / Loan':         { color:'#5c4a32', bg:'rgba(92,74,50,0.12)',   emoji:'🏦' },
+  'Rent':               { color:'#8a3a3a', bg:'rgba(138,58,58,0.12)',  emoji:'🏠' },
+  'Grocery':            { color:'#3a7a5c', bg:'rgba(58,122,92,0.12)',  emoji:'🛒' },
+  'Other':              { color:'#7a6248', bg:'rgba(122,98,72,0.12)',  emoji:'⋯'  },
+};
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function monthKey(y,m){ return `${y}-${String(m+1).padStart(2,'0')}` }
+function currentKey(){ return monthKey(currentYear, currentMonth) }
+function currentEntries(){ return data[currentKey()] || [] }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2) }
+function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}) }
+function save(){ saveToSheets(); }
+
+// ════════════════════════════════════════════
+// MONTH NAV
+// ════════════════════════════════════════════
+function updateMonthLabel(){
+  document.getElementById('monthLabel').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+}
+function changeMonth(dir){
+  currentMonth += dir;
+  if(currentMonth < 0){ currentMonth=11; currentYear--; }
+  if(currentMonth > 11){ currentMonth=0;  currentYear++; }
+  updateMonthLabel();
+  refreshAll();
+}
+
+// ════════════════════════════════════════════
+// FILTER / SORT
+// ════════════════════════════════════════════
+function setFilter(cat){
+  filterCat = cat;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.cat===cat));
+  renderTable();
+}
+function sortBy(key){
+  if(sortKey===key) sortAsc=!sortAsc; else { sortKey=key; sortAsc=true; }
+  renderTable();
+}
+
+// ════════════════════════════════════════════
+// STATUS BADGE
+// ════════════════════════════════════════════
+function statusBadge(status, overdue){
+  if(status) return '<span class="paid-yes">✓ Paid</span>';
+  return `<span class="paid-no">${overdue?'Overdue':'Unpaid'}</span>`;
+}
+
+// ════════════════════════════════════════════
+// RENDER TABLE
+// ════════════════════════════════════════════
+function renderTable(){
+  const tbody  = document.getElementById('tableBody');
+  const empty  = document.getElementById('emptyState');
+  const search = (document.getElementById('searchInput').value||'').toLowerCase();
+  const today  = new Date().toISOString().slice(0,10);
+
+  let entries = currentEntries().filter(e => {
+    const matchCat  = filterCat==='all' || e.category===filterCat;
+    const matchSrch = !search || [e.name,e.category,e.notes||''].some(v=>v.toLowerCase().includes(search));
+    return matchCat && matchSrch;
+  });
+
+  entries.sort((a,b)=>{
+    let va=a[sortKey]||'', vb=b[sortKey]||'';
+    if(sortKey==='amount'){ va=+va; vb=+vb; }
+    if(sortKey==='paid'){   va=a.paid?1:0; vb=b.paid?1:0; }
+    if(va<vb) return sortAsc?-1:1;
+    if(va>vb) return sortAsc?1:-1;
+    return 0;
+  });
+
+  const total = entries.reduce((s,e)=>s+(+e.amount),0);
+  document.getElementById('footerCount').textContent = `${entries.length} entr${entries.length===1?'y':'ies'}`;
+  document.getElementById('footerTotal').textContent = `Total: ${fmt(total)}`;
+
+  if(!entries.length){
+    tbody.innerHTML='';
+    empty.style.display='flex';
+    return;
+  }
+  empty.style.display='none';
+
+  tbody.innerHTML = entries.map(e => {
+    const cat     = CATS[e.category] || CATS['Other'];
+    const overdue = !e.paid && e.dueDate && e.dueDate < today;
+    return `<tr class="fade-in${overdue?' overdue':''}">
+      <td style="font-size:12px;color:var(--ink3)">${e.date||'—'}</td>
+      <td>
+        <div style="font-weight:500;color:var(--ink)">${e.name}</div>
+        ${e.notes?`<div style="font-size:11px;color:var(--ink3)">${e.notes}</div>`:''}
+        ${e.method?`<div style="font-size:11px;color:var(--ink3)">${e.method}</div>`:''}
+      </td>
+      <td><span class="cat-badge" style="background:${cat.bg};color:${cat.color}">${cat.emoji} ${e.category}</span></td>
+      <td class="amt" style="color:${e.paid?'var(--ink)':'var(--rust)'}">${fmt(e.amount)}</td>
+      <td style="font-size:12px;color:${overdue?'var(--rust)':'var(--ink3)'}">${e.dueDate?(overdue?'⚠️ ':'')+e.dueDate:'—'}</td>
+      <td>${statusBadge(e.paid, overdue)}</td>
+      <td><div class="row-actions">
+        <button class="act-btn act-paid"  onclick="togglePaid('${e.id}')"   title="${e.paid?'Mark unpaid':'Mark paid'}">${e.paid?'↩':'✓'}</button>
+        <button class="act-btn act-edit"  onclick="openEdit('${e.id}')"     title="Edit">✎</button>
+        <button class="act-btn act-del"   onclick="deleteEntry('${e.id}')"  title="Delete">✕</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════
+// SUMMARY
+// ════════════════════════════════════════════
+function renderSummary(){
+  const entries = currentEntries();
+  const total   = entries.reduce((s,e)=>s+(+e.amount),0);
+  const paid    = entries.filter(e=>e.paid).reduce((s,e)=>s+(+e.amount),0);
+  const pending = entries.filter(e=>!e.paid).reduce((s,e)=>s+(+e.amount),0);
+  document.getElementById('s-total').textContent   = fmt(total);
+  document.getElementById('s-paid').textContent    = fmt(paid);
+  document.getElementById('s-pending').textContent = fmt(pending);
+  document.getElementById('s-count').textContent   = entries.length;
+  document.getElementById('s-total-sub').textContent   = entries.length + ' bills';
+  document.getElementById('s-paid-sub').textContent    = entries.filter(e=>e.paid).length + ' bills cleared';
+  document.getElementById('s-pending-sub').textContent = entries.filter(e=>!e.paid).length + ' bills pending';
+}
+
+// ════════════════════════════════════════════
+// DONUT CHART
+// ════════════════════════════════════════════
+function renderChart(){
+  const entries = currentEntries();
+  const grouped = {};
+  entries.forEach(e => { grouped[e.category]=(grouped[e.category]||0)+(+e.amount); });
+  const sorted = Object.entries(grouped).sort((a,b)=>b[1]-a[1]);
+  const labels = sorted.map(([k])=>k);
+  const values = sorted.map(([,v])=>v);
+  const colors = labels.map(l=>(CATS[l]||CATS['Other']).color);
+  const total  = values.reduce((s,v)=>s+v,0);
+  if(donutChart){ donutChart.destroy(); donutChart=null; }
+  const ctx = document.getElementById('donutChart').getContext('2d');
+  donutChart = new Chart(ctx,{
+    type:'doughnut',
+    data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2, borderColor:'#fff', hoverOffset:6 }]},
+    options:{ cutout:'68%', plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>`  ${fmt(ctx.parsed)} (${((ctx.parsed/total)*100).toFixed(1)}%)` } } }, animation:{animateScale:true,duration:600} }
+  });
+  const bl = document.getElementById('breakdownList');
+  if(!sorted.length){ bl.innerHTML='<div style="padding:12px 20px;font-size:12px;color:var(--ink3)">No data for this month</div>'; return; }
+  bl.innerHTML = sorted.map(([cat,amt])=>{
+    const c = CATS[cat]||CATS['Other'];
+    const pct = total>0?((amt/total)*100).toFixed(0):0;
+    return `<div class="bdwn-row">
+      <div class="bdwn-dot" style="background:${c.color}"></div>
+      <div class="bdwn-name">${c.emoji} ${cat}</div>
+      <div class="bdwn-bar-wrap"><div class="bdwn-bar" style="width:${pct}%;background:${c.color}"></div></div>
+      <div class="bdwn-amt">${fmt(amt)}</div>
+      <div class="bdwn-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════
+// UPCOMING
+// ════════════════════════════════════════════
+function renderUpcoming(){
+  const today   = new Date().toISOString().slice(0,10);
+  const future  = new Date(); future.setDate(future.getDate()+30);
+  const futureS = future.toISOString().slice(0,10);
+  const entries = currentEntries().filter(e=>!e.paid&&e.dueDate&&e.dueDate<=futureS).sort((a,b)=>a.dueDate>b.dueDate?1:-1);
+  const ul = document.getElementById('upcomingList');
+  if(!entries.length){ ul.innerHTML='<div class="empty" style="padding:28px 24px"><div style="font-size:28px;opacity:0.35">📅</div><div style="font-size:13px;color:var(--ink3)">No upcoming unpaid bills</div></div>'; return; }
+  ul.innerHTML = entries.map(e=>{
+    const cat = CATS[e.category]||CATS['Other'];
+    const dd  = new Date(e.dueDate);
+    const ov  = e.dueDate < today;
+    return `<div class="upcoming-item${ov?' overdue':''}">
+      <div class="up-day" style="${ov?'background:rgba(192,83,58,0.1);border-color:var(--rust)':''}">
+        <div class="up-day-num" style="${ov?'color:var(--rust)':''}">${dd.getDate()}</div>
+        <div class="up-day-mo">${SHORT_MO[dd.getMonth()]}</div>
+      </div>
+      <div class="up-info">
+        <div class="up-name">${e.name}</div>
+        <div class="up-cat">${cat.emoji} ${e.category}${ov?' · <span style="color:var(--rust)">Overdue</span>':''}</div>
+      </div>
+      <div class="up-amt">${fmt(e.amount)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════
+// REFRESH ALL
+// ════════════════════════════════════════════
+function refreshAll(){
+  renderSummary();
+  renderTable();
+  renderChart();
+  renderUpcoming();
+}
+
+// ════════════════════════════════════════════
+// ADD / EDIT MODAL
+// ════════════════════════════════════════════
+function openAdd(){
+  editId=null;
+  document.getElementById('modalTitle').textContent='Add Expense';
+  document.getElementById('f-name').value     ='';
+  document.getElementById('f-amount').value   ='';
+  document.getElementById('f-category').value ='';
+  document.getElementById('f-date').value     = new Date().toISOString().slice(0,10);
+  document.getElementById('f-dueDate').value  ='';
+  document.getElementById('f-method').value   ='';
+  document.getElementById('f-paid').value     ='false';
+  document.getElementById('f-recurring').value='none';
+  document.getElementById('f-notes').value    ='';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),100);
+}
+
+function openEdit(id){
+  const entry = currentEntries().find(e=>e.id===id);
+  if(!entry) return;
+  editId=id;
+  document.getElementById('modalTitle').textContent='Edit Expense';
+  document.getElementById('f-name').value     = entry.name;
+  document.getElementById('f-amount').value   = entry.amount;
+  document.getElementById('f-category').value = entry.category;
+  document.getElementById('f-date').value     = entry.date||'';
+  document.getElementById('f-dueDate').value  = entry.dueDate||'';
+  document.getElementById('f-method').value   = entry.method||'';
+  document.getElementById('f-paid').value     = String(entry.paid);
+  document.getElementById('f-recurring').value= entry.recurring||'none';
+  document.getElementById('f-notes').value    = entry.notes||'';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(e){
+  if(e && e.target!==document.getElementById('overlay')) return;
+  document.getElementById('overlay').classList.remove('open');
+  editId=null;
+}
+
+function saveExpense(){
+  const name     = document.getElementById('f-name').value.trim();
+  const amount   = parseFloat(document.getElementById('f-amount').value);
+  const category = document.getElementById('f-category').value;
+  if(!name)    { alert('Please enter a description.'); return; }
+  if(!amount||amount<=0) { alert('Please enter a valid amount.'); return; }
+  if(!category){ alert('Please select a category.'); return; }
+
+  const entry = {
+    id:        editId || uid(),
+    name, amount, category,
+    date:      document.getElementById('f-date').value,
+    dueDate:   document.getElementById('f-dueDate').value,
+    method:    document.getElementById('f-method').value,
+    paid:      document.getElementById('f-paid').value==='true',
+    recurring: document.getElementById('f-recurring').value,
+    notes:     document.getElementById('f-notes').value.trim(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const key = currentKey();
+  if(!data[key]) data[key]=[];
+  if(editId){ const i=data[key].findIndex(e=>e.id===editId); if(i>-1) data[key][i]=entry; }
+  else data[key].push(entry);
+
+  save();
+  document.getElementById('overlay').classList.remove('open');
+  editId=null;
+  refreshAll();
+  showToast(editId?'✎ Expense updated':'✓ Expense added');
+}
+
+function deleteEntry(id){
+  if(!confirm('Delete this expense?')) return;
+  const key=currentKey();
+  data[key]=(data[key]||[]).filter(e=>e.id!==id);
+  save();
+  refreshAll();
+  showToast('🗑 Expense deleted');
+}
+
+function togglePaid(id){
+  const key=currentKey();
+  const entry=(data[key]||[]).find(e=>e.id===id);
+  if(!entry) return;
+  entry.paid=!entry.paid;
+  save();
+  refreshAll();
+  showToast(entry.paid?'✓ Marked as paid':'↩ Marked as unpaid');
+}
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function showToast(msg){
+  const el=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2400);
+}
+
+// ════════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════════
+function exportCSV(){
+  const entries=currentEntries();
+  if(!entries.length){ alert('No entries to export.'); return; }
+  const headers=['Date','Description','Category','Amount','Due Date','Status','Method','Recurring','Notes'];
+  const rows=entries.map(e=>[e.date||'',e.name,e.category,e.amount,e.dueDate||'',e.paid?'Paid':'Unpaid',e.method||'',e.recurring||'',`"${(e.notes||'').replace(/"/g,"'")}"` ]);
+  const csv=[headers,...rows].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`expenses-${currentKey()}.csv`;
+  a.click();
+  showToast('📥 CSV exported');
+}
+
+// ════════════════════════════════════════════
+// KEYBOARD
+// ════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeModal({target:document.getElementById('overlay')});
+  if(e.key==='Enter'&&document.getElementById('overlay').classList.contains('open')) saveExpense();
+});
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
 updateMonthLabel();
-loadFromSheets(); // loads from Google Sheets then calls refreshAll()
+loadFromSheets();
 
-// ── PWA SERVICE WORKER ──
+// PWA
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
