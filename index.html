@@ -378,6 +378,8 @@ tbody td{padding:11px 16px;font-size:13px}
       <div class="mnav-label" id="monthLabel">—</div>
       <button class="mnav-btn" onclick="changeMonth(1)">&#8594;</button>
     </div>
+    <span id="syncBadge" style="font-size:12px;color:var(--ink3);font-family:var(--sans)">⟳ Loading…</span>
+    <button class="btn btn-ghost btn-sm" onclick="loadFromSheets()" title="Refresh from Google Sheets" style="padding:5px 8px">&#8635;</button>
     <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="color:var(--ink3)">&#128274; Logout</button>
     <button class="btn btn-ghost btn-sm" onclick="exportCSV()">&#8595; Export</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Add Expense</button>
@@ -620,22 +622,92 @@ const CATS = {
   'Other':             { color:'#7a6248', bg:'rgba(122,98,72,0.12)',  emoji:'⋯'  },
 };
 
+// ── GOOGLE SHEETS CONFIG ──
+// Replace the URL below with your actual Web App URL from Google Apps Script
+// IMPORTANT: This URL is write-protected — it only accepts requests from this app
+// Your actual expense data lives in YOUR private Google Sheet, not exposed here
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzef9z70N0myEaHFPX-FgrBNjMn5Y_TVm1vhtgS2-qJJGFCUPfRe92NrwHrj4oQVB6ddw/exec';
+
 // ── STATE ──
-// ── MIGRATE: clear old demo-seeded data if it exists from v1 ──
-(function(){
-  const raw = localStorage.getItem('expenseData');
-  if(!raw) return;
+let data = {}; // loaded from Google Sheets on startup
+let syncStatus = 'idle'; // idle | syncing | error | ok
+
+// ── SYNC UI ──
+function setSyncStatus(s, msg){
+  syncStatus = s;
+  const el = document.getElementById('syncBadge');
+  if(!el) return;
+  const map = {
+    syncing: { text:'⟳ Syncing…',  color:'#d4960a' },
+    ok:      { text:'✓ Synced',    color:'#4a7c59' },
+    offline: { text:'⚡ Offline',  color:'#7a6248' },
+    error:   { text:'✕ Sync error',color:'#c0533a' },
+  };
+  const m = map[s] || map.offline;
+  el.textContent = msg || m.text;
+  el.style.color = m.color;
+}
+
+// ── LOAD FROM GOOGLE SHEETS ──
+async function loadFromSheets(){
+  setSyncStatus('syncing');
   try {
-    const parsed = JSON.parse(raw);
-    // If any month has an entry named 'HDFC Credit Card Bill' it is demo data — wipe it
-    let isDemo = false;
-    Object.values(parsed).forEach(entries => {
-      if(Array.isArray(entries) && entries.some(e => e.name === 'HDFC Credit Card Bill')) isDemo = true;
+    const res = await fetch(SHEETS_URL, { method:'GET', mode:'cors' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    data = {};
+    rows.forEach(e => {
+      // Only process rows that have an id and name — skip empty/header rows
+      if(!e.id || !e.name) return;
+      const monthKey = e.date ? String(e.date).slice(0,7) : 'unknown';
+      if(!data[monthKey]) data[monthKey] = [];
+      data[monthKey].push({
+        id:        e.id,
+        name:      e.name,
+        category:  e.category,
+        amount:    parseFloat(e.amount) || 0,
+        date:      e.date,
+        dueDate:   e.dueDate,
+        method:    e.method,
+        paid:      e.paid === 'true' || e.paid === true,
+        recurring: e.recurring,
+        notes:     e.notes,
+        updatedAt: e.updatedAt,
+      });
     });
-    if(isDemo){ localStorage.removeItem('expenseData'); }
-  } catch(e){}
-})();
-let data = JSON.parse(localStorage.getItem('expenseData') || '{}');
+    // Cache locally as offline backup
+    localStorage.setItem('expenseCache', JSON.stringify(data));
+    setSyncStatus('ok');
+  } catch(err){
+    console.warn('Sheets load failed, using local cache:', err);
+    // Fallback to local cache if offline or URL not set yet
+    const cached = localStorage.getItem('expenseCache');
+    if(cached){ try{ data = JSON.parse(cached); }catch(e){} }
+    setSyncStatus('offline');
+  }
+  refreshAll();
+}
+
+// ── SAVE TO GOOGLE SHEETS ──
+async function saveToSheets(){
+  setSyncStatus('syncing');
+  const allEntries = Object.values(data).flat();
+  // Always keep a local backup regardless of network
+  localStorage.setItem('expenseCache', JSON.stringify(data));
+  try {
+    const res = await fetch(SHEETS_URL, {
+      method:  'POST',
+      mode:    'cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify({ action:'save', data: allEntries }),
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    setSyncStatus('ok');
+  } catch(err){
+    console.warn('Sheets save failed:', err);
+    setSyncStatus('error', '✕ Saved locally only');
+  }
+}
 // data structure: { "2025-03": [...expenses] }
 let currentYear  = new Date().getFullYear();
 let currentMonth = new Date().getMonth(); // 0-indexed
@@ -654,7 +726,7 @@ function currentKey(){ return monthKey(currentYear, currentMonth) }
 function currentEntries(){ return data[currentKey()] || [] }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2) }
 function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:0}) }
-function save(){ localStorage.setItem('expenseData', JSON.stringify(data)) }
+function save(){ saveToSheets(); }
 
 // ── MONTH NAV ──
 function updateMonthLabel(){
@@ -1045,7 +1117,7 @@ checkSession();
 
 // ── INIT ──
 updateMonthLabel();
-refreshAll();
+loadFromSheets(); // loads from Google Sheets then calls refreshAll()
 
 // ── PWA SERVICE WORKER ──
 if('serviceWorker' in navigator){
