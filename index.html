@@ -626,7 +626,7 @@ const CATS = {
 // Replace the URL below with your actual Web App URL from Google Apps Script
 // IMPORTANT: This URL is write-protected — it only accepts requests from this app
 // Your actual expense data lives in YOUR private Google Sheet, not exposed here
-const SHEETS_URL = 'https://script.google.com/macros/s/REPLACE_WITH_YOUR_WEB_APP_URL/exec';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzef9z70N0myEaHFPX-FgrBNjMn5Y_TVm1vhtgS2-qJJGFCUPfRe92NrwHrj4oQVB6ddw/exec';
 
 // ── STATE ──
 let data = {}; // loaded from Google Sheets on startup
@@ -667,7 +667,17 @@ async function loadFromSheets(){
       rows.forEach(e => {
         if(!e.id || !e.name) return; // skip empty rows
         // Normalize date — sheet sometimes returns date objects as strings
-        const rawDate = String(e.date || '').trim();
+        // Normalize date to YYYY-MM-DD regardless of what format sheet returns
+        let rawDate = String(e.date || '').trim();
+        try {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            const y = d.getFullYear();
+            const mo = String(d.getMonth()+1).padStart(2,'0');
+            const dy = String(d.getDate()).padStart(2,'0');
+            rawDate = `${y}-${mo}-${dy}`;
+          }
+        } catch(ex) {}
         const monthKey = rawDate.length >= 7 ? rawDate.slice(0,7) : 'unknown';
         if(!data[monthKey]) data[monthKey] = [];
         data[monthKey].push({
