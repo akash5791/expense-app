@@ -620,17 +620,32 @@ tbody td{padding:11px 16px;font-size:13px}
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzef9z70N0myEaHFPX-FgrBNjMn5Y_TVm1vhtgS2-qJJGFCUPfRe92NrwHrj4oQVB6ddw/exec';
 
 // ════════════════════════════════════════════
-// AUTH
+// AUTH — passwords stored as SHA-256 hashes only
+// To change password: run this in browser console:
+//   sha256('yournewpassword').then(h => console.log(h))
+// Then update CREDS below with the new hash
 // ════════════════════════════════════════════
-const AUTH = { USERNAME:'admin', PASSWORD:'expense@123', KEY:'exp_auth' };
+const CREDS = {
+  USERNAME_HASH: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
+  PASSWORD_HASH: '426d216cd1bac2ba805ffd4015c6ebf852177f1774c4d0bebb785998d6a597cf',
+  KEY: 'exp_auth'
+};
 
-function doLogin(){
-  const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value;
+// SHA-256 hash function using Web Crypto API (built into all browsers)
+async function sha256(str){
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin(){
+  const u   = document.getElementById('loginUser').value.trim();
+  const p   = document.getElementById('loginPass').value;
   const err = document.getElementById('loginError');
-  if(u === AUTH.USERNAME && p === AUTH.PASSWORD){
+  // Hash both inputs and compare — raw password never stored anywhere
+  const [uh, ph] = await Promise.all([sha256(u), sha256(p)]);
+  if(uh === CREDS.USERNAME_HASH && ph === CREDS.PASSWORD_HASH){
     err.style.display = 'none';
-    sessionStorage.setItem(AUTH.KEY,'1');
+    sessionStorage.setItem(CREDS.KEY,'1');
     const scr = document.getElementById('loginScreen');
     scr.style.transition = 'opacity .3s';
     scr.style.opacity = '0';
@@ -650,12 +665,12 @@ function togglePassword(){
 }
 
 function doLogout(){
-  sessionStorage.removeItem(AUTH.KEY);
+  sessionStorage.removeItem(CREDS.KEY);
   location.reload();
 }
 
 (function checkSession(){
-  if(sessionStorage.getItem(AUTH.KEY)==='1'){
+  if(sessionStorage.getItem(CREDS.KEY)==='1'){
     document.getElementById('loginScreen').style.display='none';
   }
 })();
