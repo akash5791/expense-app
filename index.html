@@ -626,7 +626,7 @@ const CATS = {
 // Replace the URL below with your actual Web App URL from Google Apps Script
 // IMPORTANT: This URL is write-protected — it only accepts requests from this app
 // Your actual expense data lives in YOUR private Google Sheet, not exposed here
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzef9z70N0myEaHFPX-FgrBNjMn5Y_TVm1vhtgS2-qJJGFCUPfRe92NrwHrj4oQVB6ddw/exec';
+const SHEETS_URL = 'https://script.google.com/macros/s/REPLACE_WITH_YOUR_WEB_APP_URL/exec';
 
 // ── STATE ──
 let data = {}; // loaded from Google Sheets on startup
@@ -652,38 +652,47 @@ function setSyncStatus(s, msg){
 async function loadFromSheets(){
   setSyncStatus('syncing');
   try {
-    const res = await fetch(SHEETS_URL, { method:'GET', mode:'cors' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const rows = await res.json();
-    data = {};
-    rows.forEach(e => {
-      // Only process rows that have an id and name — skip empty/header rows
-      if(!e.id || !e.name) return;
-      const monthKey = e.date ? String(e.date).slice(0,7) : 'unknown';
-      if(!data[monthKey]) data[monthKey] = [];
-      data[monthKey].push({
-        id:        e.id,
-        name:      e.name,
-        category:  e.category,
-        amount:    parseFloat(e.amount) || 0,
-        date:      e.date,
-        dueDate:   e.dueDate,
-        method:    e.method,
-        paid:      e.paid === 'true' || e.paid === true,
-        recurring: e.recurring,
-        notes:     e.notes,
-        updatedAt: e.updatedAt,
-      });
+    // Google Apps Script requires no-cors for GET — use URL param trick to get JSON back
+    const url = SHEETS_URL + '?t=' + Date.now(); // cache buster
+    const res = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
     });
-    // Cache locally as offline backup
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    let rows = [];
+    try { rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON from sheet: ' + text.slice(0,100)); }
+    data = {};
+    if(Array.isArray(rows)){
+      rows.forEach(e => {
+        if(!e.id || !e.name) return; // skip empty rows
+        // Normalize date — sheet sometimes returns date objects as strings
+        const rawDate = String(e.date || '').trim();
+        const monthKey = rawDate.length >= 7 ? rawDate.slice(0,7) : 'unknown';
+        if(!data[monthKey]) data[monthKey] = [];
+        data[monthKey].push({
+          id:        String(e.id),
+          name:      String(e.name),
+          category:  String(e.category || 'Other'),
+          amount:    parseFloat(e.amount) || 0,
+          date:      rawDate,
+          dueDate:   String(e.dueDate || ''),
+          method:    String(e.method || ''),
+          paid:      e.paid === 'true' || e.paid === true || e.paid === 'TRUE',
+          recurring: String(e.recurring || 'none'),
+          notes:     String(e.notes || ''),
+          updatedAt: String(e.updatedAt || ''),
+        });
+      });
+    }
     localStorage.setItem('expenseCache', JSON.stringify(data));
     setSyncStatus('ok');
+    console.log('Loaded', Object.values(data).flat().length, 'entries from Google Sheets');
   } catch(err){
-    console.warn('Sheets load failed, using local cache:', err);
-    // Fallback to local cache if offline or URL not set yet
+    console.warn('Sheets load failed:', err.message);
     const cached = localStorage.getItem('expenseCache');
-    if(cached){ try{ data = JSON.parse(cached); }catch(e){} }
-    setSyncStatus('offline');
+    if(cached){ try{ data = JSON.parse(cached); console.log('Using local cache'); }catch(e){} }
+    setSyncStatus('error', '✕ ' + err.message.slice(0,40));
   }
   refreshAll();
 }
@@ -692,19 +701,26 @@ async function loadFromSheets(){
 async function saveToSheets(){
   setSyncStatus('syncing');
   const allEntries = Object.values(data).flat();
-  // Always keep a local backup regardless of network
   localStorage.setItem('expenseCache', JSON.stringify(data));
   try {
+    // Apps Script POST needs Content-Type text/plain to avoid CORS preflight
     const res = await fetch(SHEETS_URL, {
       method:  'POST',
-      mode:    'cors',
-      headers: { 'Content-Type': 'text/plain' },
+      redirect:'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body:    JSON.stringify({ action:'save', data: allEntries }),
     });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    setSyncStatus('ok');
+    const text = await res.text();
+    let json = {};
+    try { json = JSON.parse(text); } catch(e){}
+    if(json.status === 'ok'){
+      setSyncStatus('ok');
+      console.log('Saved', allEntries.length, 'entries to Google Sheets');
+    } else {
+      throw new Error(text.slice(0,80));
+    }
   } catch(err){
-    console.warn('Sheets save failed:', err);
+    console.warn('Sheets save failed:', err.message);
     setSyncStatus('error', '✕ Saved locally only');
   }
 }
